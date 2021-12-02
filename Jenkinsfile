@@ -1,21 +1,25 @@
 pipeline {
 	agent any
 	stages {
-		stage('Checkout SCM') {
+		stage ('Checkout') {
 			steps {
-				git 'https://github.com/janessatng/JenkinsDependencyCheckTest'
+				git branch:'master', url: 'https://github.com/janessatng/3x03practicaltest'
 			}
 		}
-
-		stage('OWASP DependencyCheck') {
+		stage('Code Quality Check via SonarQube') {
 			steps {
-				dependencyCheck additionalArguments: '--format HTML --format XML', odcInstallation: 'Default'
+				script {
+					def scannerHome = tool 'SonarQube';
+					withSonarQubeEnv('SonarQube') {
+					sh "${scannerHome}/bin/sonar-scanner -Dsonar.login=9592366d07658fdfa0ce9585043fc73bc9687d64 -Dsonar.projectKey=OWASP -Dsonar.sources=."
+					}
+				}
 			}
 		}
-	}	
+	}
 	post {
-		success {
-			dependencyCheckPublisher pattern: 'dependency-check-report.xml'
+		always {
+			recordIssues enabledForFailure: true, tool: sonarQube()
 		}
 	}
 }
